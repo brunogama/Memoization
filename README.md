@@ -1,4 +1,4 @@
-# MemoizationMacros
+# Memoization
 
 **Memoization** is a Swift compiler plugin that provides a `@memoized` macro for automatically memoizing function results. By leveraging Swift's powerful macro system, `@memoized` simplifies caching the results of expensive function calls, enhancing performance without boilerplate code.
 
@@ -26,7 +26,7 @@ dependencies: [
 2. Import the Module
 
 ```swift
-import MemoizationMacros
+import Memoization
 ```
 
 ## Usage
@@ -34,6 +34,8 @@ import MemoizationMacros
 Annotate your functions with the `@memoized` macro to enable `memoization`.
 
 ```swift
+import Memoization
+
 class Calculator {
     @memoized
     func fibonacci(_ n: Int) -> Int {
@@ -51,6 +53,8 @@ Subsequent calls with the same parameter and retrieve the result from the cache,
 **Generated code:**
 
 ```swift
+import Memoization
+
 class Calculator {
     func fibonacci(_ n: Int) -> Int {
         if n <= 1 {
@@ -82,6 +86,7 @@ class Calculator {
 In the future I will add policies for automatic cacche invalidation. Such as notification of low memory or stall data, timeouts and so on. Suggestions are welcome.
 
 ## How It Works
+
 The `@memoized` macro processes annotated functions and generates additional code to handle caching:
 
 1. Function Analysis: Extracts the function's name, return type, and parameters.
