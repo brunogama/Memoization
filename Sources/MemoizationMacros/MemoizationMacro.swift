@@ -16,11 +16,9 @@ public enum MemoizeMacro: PeerMacro {
         
         let signature = funcDecl.signature
         let parameterClause = signature.parameterClause
-        
-        return [
-            """
+        let source = """
             \
-            private var memoizedFibonacci: MemoizeStorage<Int> = .init()
+            private var memoizedFibonacci = MemoizeStorage<Int>()
 
             func memoizedFibonacci(_ n: Int) -> Int {
                 if let cachedResult = memoizedFibonacci.getValue(for: CacheKey(n)) {
@@ -35,7 +33,11 @@ public enum MemoizeMacro: PeerMacro {
             func resetMemoizedFibonacci() {
                 memoizedFibonacci.clear()
             }
-            """ as DeclSyntax
+            """
+        var parser = Parser(source)
+        
+        return [
+            DeclSyntax.parse(from: &parser)
         ]
     }
 
