@@ -17,23 +17,23 @@ public enum MemoizeMacro: PeerMacro {
         let signature = funcDecl.signature
         let parameterClause = signature.parameterClause
         let source = """
-            \
-            private var memoizedFibonacci = MemoizeStorage<Int>()
 
-            func memoizedFibonacci(_ n: Int) -> Int {
-                if let cachedResult = memoizedFibonacci.getValue(for: CacheKey(n)) {
-                    return cachedResult
-                }
+        private var memoizedFibonacciStorage = MemoizeStorage<Int>()
 
-                let result = fibonacci(n)
-                memoizedFibonacci[CacheKey(n)] = CacheResult(result)
-                return result
+        func memoizedFibonacci(_ n: Int) -> Int {
+            if let cachedResult = memoizedFibonacciStorage.getValue(for: CacheKey(n)) {
+                return cachedResult
             }
+            let result = fibonacci(n)
+            memoizedFibonacciStorage[CacheKey(n)] = CacheResult(result)
+            return result
+        }
 
-            func resetMemoizedFibonacci() {
-                memoizedFibonacci.clear()
-            }
-            """
+        func resetMemoizedFibonacci() {
+            memoizedFibonacciStorage.clear()
+        }
+        """
+        
         var parser = Parser(source)
         
         return [

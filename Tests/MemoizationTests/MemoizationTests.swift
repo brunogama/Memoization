@@ -38,20 +38,19 @@ final class MemoizationTests: XCTestCase {
                     return fibonacci(n - 1) + fibonacci(n - 2)
                 }
 
-                private var memoizedFibonacci = MemoizeStorage<Int>()
+                private var memoizedFibonacciStorage = MemoizeStorage<Int>()
 
                 func memoizedFibonacci(_ n: Int) -> Int {
-                    if let cachedResult = memoizedFibonacci.getValue(for: CacheKey(n)) {
+                    if let cachedResult = memoizedFibonacciStorage.getValue(for: CacheKey(n)) {
                         return cachedResult
                     }
-            
                     let result = fibonacci(n)
-                    memoizedFibonacci[CacheKey(n)] = CacheResult(result)
+                    memoizedFibonacciStorage[CacheKey(n)] = CacheResult(result)
                     return result
                 }
 
                 func resetMemoizedFibonacci() {
-                    memoizedFibonacci.clear()
+                    memoizedFibonacciStorage.clear()
                 }
             }
             """#,
