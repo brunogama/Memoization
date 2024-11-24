@@ -10,22 +10,31 @@ public enum MemoizeMacro: PeerMacro {
         providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
         in context: some SwiftSyntaxMacros.MacroExpansionContext
     ) throws -> [SwiftSyntax.DeclSyntax] {
-        guard var funcDecl = declaration.as(FunctionDeclSyntax.self) else {
+        guard let funcDecl = declaration.as(FunctionDeclSyntax.self) else {
           throw MacroError.misuse("@memoized can only be attached to functions")
         }
         
         let signature = funcDecl.signature
+        
+        guard let returnTypeSyntax = signature.returnClause?.type else {
+             throw MacroError.misuse("@memoized requires a function with a return type")
+         }
+        
+        let returnTypeName = returnTypeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let funcName = funcDecl.identifier.text
+        let capitalizedFuncName = funcName.uppercasingFirstLetter()
+        let memoizedVarName = "memoized\(capitalizedFuncName)Storage"
         let parameterClause = signature.parameterClause
         let source = """
 
-        private var memoizedFibonacciStorage = MemoizeStorage<Int>()
+        private var \(memoizedVarName) = MemoizeStorage<\(returnTypeName)>()
 
-        func memoizedFibonacci(_ n: Int) -> Int {
-            if let cachedResult = memoizedFibonacciStorage.getValue(for: CacheKey(n)) {
+        func memoized\(capitalizedFuncName)(_ n: Int) -> Int {
+            if let cachedResult = \(memoizedVarName).getValue(for: CacheKey(n)) {
                 return cachedResult
             }
             let result = fibonacci(n)
-            memoizedFibonacciStorage[CacheKey(n)] = CacheResult(result)
+            \(memoizedVarName)[CacheKey(n)] = CacheResult(result)
             return result
         }
 
