@@ -41,11 +41,12 @@ final class MemoizationTests: XCTestCase {
                 private var memoizedFibonacciStorage = MemoizeStorage<Int>()
 
                 func memoizedFibonacci(_ n: Int) -> Int {
-                    if let cachedResult = memoizedFibonacciStorage.getValue(for: CacheKey(n)) {
+                    let key = CacheKey(n)
+                    if let cachedResult = memoizedFibonacciStorage.getValue(for: key) {
                         return cachedResult
                     }
                     let result = fibonacci(n)
-                    memoizedFibonacciStorage[CacheKey(n)] = CacheResult(result)
+                    memoizedFibonacciStorage[key] = CacheResult(result)
                     return result
                 }
 
