@@ -23,23 +23,23 @@ public enum MemoizeMacro: PeerMacro {
         let returnTypeName = returnTypeSyntax.description.trimmingCharacters(in: .whitespacesAndNewlines)
         let funcName = funcDecl.identifier.text
         let capitalizedFuncName = funcName.uppercasingFirstLetter()
-        let memoizedVarName = "memoized\(capitalizedFuncName)Storage"
+        let storage = "memoized\(capitalizedFuncName)Storage"
         let parameterClause = signature.parameterClause
         let source = """
 
-        private var \(memoizedVarName) = MemoizeStorage<\(returnTypeName)>()
+        private var \(storage) = MemoizeStorage<\(returnTypeName)>()
 
-        func memoized\(capitalizedFuncName)(_ n: Int) -> Int {
-            if let cachedResult = \(memoizedVarName).getValue(for: CacheKey(n)) {
+        func memoized\(capitalizedFuncName)(_ n: Int) -> \(returnTypeName) {
+            if let cachedResult = \(storage).getValue(for: CacheKey(n)) {
                 return cachedResult
             }
             let result = fibonacci(n)
-            \(memoizedVarName)[CacheKey(n)] = CacheResult(result)
+            \(storage)[CacheKey(n)] = CacheResult(result)
             return result
         }
 
         func resetMemoizedFibonacci() {
-            memoizedFibonacciStorage.clear()
+            \(storage).clear()
         }
         """
         
