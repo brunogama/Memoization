@@ -2,42 +2,58 @@ import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
+import SwiftParser
 import XCTest
 
-// Macro implementations build for the host, so the corresponding module is not available when cross-compiling. Cross-compiled tests may still make use of the macro itself in end-to-end tests.
 #if canImport(MemoizationMacros)
 import MemoizationMacros
 
 let testMacros: [String: Macro.Type] = [
-    "stringify": StringifyMacro.self,
+    "memoized": MemoizeMacro.self
 ]
 #endif
 
 final class MemoizationTests: XCTestCase {
-    func testMacro() throws {
-        #if canImport(MemoizationMacros)
-        assertMacroExpansion(
-            """
-            #stringify(a + b)
-            """,
-            expandedSource: """
-            (a + b, "a + b")
-            """,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
-    }
-
-    func testMacroWithStringLiteral() throws {
+    
+    func testCachedMacroExpansion() throws {
         #if canImport(MemoizationMacros)
         assertMacroExpansion(
             #"""
-            #stringify("Hello, \(name)")
+            class A {
+                @memoized
+                func fibonacci(_ n: Int) -> Int {
+                    if n <= 1 {
+                        return n
+                    }
+                    return fibonacci(n - 1) + fibonacci(n - 2)
+                }
+            }
             """#,
             expandedSource: #"""
-            ("Hello, \(name)", #""Hello, \(name)""#)
+            class A {
+                func fibonacci(_ n: Int) -> Int {
+                    if n <= 1 {
+                        return n
+                    }
+                    return fibonacci(n - 1) + fibonacci(n - 2)
+                }
+
+                private var memoizedFibonacci: MemoizeStorage<Int> = .init()
+
+                func memoizedFibonacci(_ n: Int) -> Int {
+                    if let cachedResult = memoizedFibonacci.getValue(for: CacheKey(n)) {
+                        return cachedResult
+                    }
+            
+                    let result = fibonacci(n)
+                    memoizedFibonacci[CacheKey(n)] = CacheResult(result)
+                    return result
+                }
+
+                func resetMemoizedFibonacci() {
+                    memoizedFibonacci.clear()
+                }
+            }
             """#,
             macros: testMacros
         )

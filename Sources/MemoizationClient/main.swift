@@ -1,8 +1,15 @@
 import Memoization
 
-let a = 17
-let b = 25
+class A {
+    func fibonacci(_ n: Int) -> Int {
+        if n <= 1 {
+            return n
+        }
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
 
-let (result, code) = #stringify(a + b)
 
-print("The value \(result) was produced by the code \"\(code)\"")
+let a = A()
+
+print(a.fibonacci(10))

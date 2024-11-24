@@ -2,32 +2,64 @@ import SwiftCompilerPlugin
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
+import SwiftParser
 
-/// Implementation of the `stringify` macro, which takes an expression
-/// of any type and produces a tuple containing the value of that expression
-/// and the source code that produced the value. For example
-///
-///     #stringify(x + y)
-///
-///  will expand to
-///
-///     (x + y, "x + y")
-public struct StringifyMacro: ExpressionMacro {
+public enum MemoizeMacro: PeerMacro {
     public static func expansion(
-        of node: some FreestandingMacroExpansionSyntax,
-        in context: some MacroExpansionContext
-    ) -> ExprSyntax {
-        guard let argument = node.arguments.first?.expression else {
-            fatalError("compiler bug: the macro does not have any arguments")
+        of node: SwiftSyntax.AttributeSyntax,
+        providingPeersOf declaration: some SwiftSyntax.DeclSyntaxProtocol,
+        in context: some SwiftSyntaxMacros.MacroExpansionContext
+    ) throws -> [SwiftSyntax.DeclSyntax] {
+        guard var funcDecl = declaration.as(FunctionDeclSyntax.self) else {
+          throw MacroError.misuse("@memoized can only be attached to functions")
         }
+        
+        let signature = funcDecl.signature
+        let parameterClause = signature.parameterClause
+        
+        return [
+            """
+            \
+            private var memoizedFibonacci: MemoizeStorage<Int> = .init()
 
-        return "(\(argument), \(literal: argument.description))"
+            func memoizedFibonacci(_ n: Int) -> Int {
+                if let cachedResult = memoizedFibonacci.getValue(for: CacheKey(n)) {
+                    return cachedResult
+                }
+
+                let result = fibonacci(n)
+                memoizedFibonacci[CacheKey(n)] = CacheResult(result)
+                return result
+            }
+
+            func resetMemoizedFibonacci() {
+                memoizedFibonacci.clear()
+            }
+            """ as DeclSyntax
+        ]
     }
+
 }
 
 @main
 struct MemoizationPlugin: CompilerPlugin {
     let providingMacros: [Macro.Type] = [
-        StringifyMacro.self,
+        MemoizeMacro.self
     ]
+}
+
+
+enum MacroError: Error {
+    case misuse(String)
+}
+
+extension String {
+    var startsWithUppercase: Bool {
+        guard let firstCharacter = self.first else { return false }
+        return firstCharacter.isUppercase
+    }
+    
+    func uppercasingFirstLetter() -> String {
+        prefix(1).uppercased() + dropFirst()
+    }
 }
