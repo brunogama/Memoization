@@ -6,5 +6,9 @@
 //
 
 public struct CacheResult<V: Equatable> {
-    let result: V
+    public let result: V
+
+    public init(_ result: V) {
+        self.result = result
+    }
 }

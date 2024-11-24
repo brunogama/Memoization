@@ -1,5 +1,5 @@
 @_exported import MemoizationCore
 
-@attached(peer, names: prefixed(memoize))
-public macro memoize() =
-#externalMacro(module: "MemoizationMacros", type: "MemoizeMacro")
+@attached(peer, names: arbitrary)
+public macro memoized() =
+    #externalMacro(module: "MemoizationMacros", type: "MemoizeMacro")

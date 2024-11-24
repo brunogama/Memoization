@@ -1,35 +1,37 @@
+import MacroTesting
+import InlineSnapshotTesting
+import SwiftParser
 import SwiftSyntax
 import SwiftSyntaxBuilder
 import SwiftSyntaxMacros
 import SwiftSyntaxMacrosTestSupport
-import SwiftParser
 import XCTest
-
-#if canImport(MemoizationMacros)
 import MemoizationMacros
-
-let testMacros: [String: Macro.Type] = [
-    "memoized": MemoizeMacro.self
-]
-#endif
 
 final class MemoizationTests: XCTestCase {
     
+    override func invokeTest() {
+        
+        withMacroTesting(macros: ["memoized": MemoizeMacro.self]) {
+            super.invokeTest()
+        }
+    }
+
     func testCachedMacroExpansion() throws {
-        #if canImport(MemoizationMacros)
-        assertMacroExpansion(
-            #"""
-            class A {
-                @memoized
-                func fibonacci(_ n: Int) -> Int {
-                    if n <= 1 {
-                        return n
-                    }
-                    return fibonacci(n - 1) + fibonacci(n - 2)
-                }
-            }
-            """#,
-            expandedSource: #"""
+        assertMacro {
+         """
+         class A {
+             @memoized
+             func fibonacci(_ n: Int) -> Int {
+                 if n <= 1 {
+                     return n
+                 }
+                 return fibonacci(n - 1) + fibonacci(n - 2)
+             }
+         }
+         """
+        } expansion: {
+            """
             class A {
                 func fibonacci(_ n: Int) -> Int {
                     if n <= 1 {
@@ -40,7 +42,7 @@ final class MemoizationTests: XCTestCase {
 
                 private var memoizedFibonacciStorage = MemoizeStorage<Int>()
 
-                func memoizedFibonacci(_ n: Int) -> Int {
+                public func memoizedFibonacci(_ n: Int) -> Int {
                     let key = CacheKey(n)
                     if let cachedResult = memoizedFibonacciStorage.getValue(for: key) {
                         return cachedResult
@@ -50,15 +52,31 @@ final class MemoizationTests: XCTestCase {
                     return result
                 }
 
-                func resetMemoizedFibonacci() {
+                public func resetMemoizedFibonacci() {
                     memoizedFibonacciStorage.clear()
                 }
             }
-            """#,
-            macros: testMacros
-        )
-        #else
-        throw XCTSkip("macros are only supported when running tests for the host platform")
-        #endif
+            """
+        }
     }
+    
+    // MARK: - Integration
+    
+//    func testCachedMacroExpansion() throws {
+//        class A {
+//            @memoized
+//            func fibonacci(_ n: Int) -> Int {
+//                if n <= 1 {
+//                    return n
+//                }
+//                return fibonacci(n - 1) + fibonacci(n - 2)
+//            }
+//        }
+//
+//        let a = A()
+//        let result = a.fibonacci(10)
+//        XCTAssertEqual(result, 55)
+//        let result2 = a.memoizedFibonacci(10)
+//        XCTAssertEqual(result2, 55)
+//    }
 }

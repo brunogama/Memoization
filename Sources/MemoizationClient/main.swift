@@ -9,7 +9,6 @@ class A {
     }
 }
 
-
 let a = A()
 
 print(a.fibonacci(10))
