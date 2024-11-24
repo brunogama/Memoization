@@ -139,4 +139,43 @@ final class MemoizationTests: XCTestCase {
             """
         }
     }
+    
+    func test_memoized_on_functions_with_two_labels_signature() {
+        assertMacro {
+            """
+            class MinistryOfSillyWalks {
+                @memoized
+                func compute(with value: Int, for timeInterval: TimeInterval, ham ham: Int, another thinng: Int) -> Int {
+                    return (0...1_000_000_000).compactMap { (spam + ham + eggs) * $0 } 
+                }
+            }
+            """
+        } expansion: {
+            """
+            class MinistryOfSillyWalks {
+                func compute(with value: Int, for timeInterval: TimeInterval, ham ham: Int, another thinng: Int) -> Int {
+                    return (0...1_000_000_000).compactMap { (spam + ham + eggs) * $0 } 
+                }
+
+                private var memoizedComputeStorage: MemoizeStorage<Int>? = .init()
+
+                func memoizedCompute(with value: Int, for timeInterval: TimeInterval, ham ham: Int, another thinng: Int) -> Int {
+                    let key = CacheKey(value, timeInterval, ham, thinng)
+                    
+                    if let cachedResult = memoizedComputeStorage?.getValue(for: key) {
+                        return cachedResult
+                    }
+                    
+                    let result = compute(value, timeInterval, ham, thinng)
+                    memoizedComputeStorage?[key] = CacheResult(result)
+                    return result
+                }
+
+                func resetCacheCompute() {
+                    memoizedComputeStorage?.clear()
+                }
+            }
+            """
+        }
+    }
 }

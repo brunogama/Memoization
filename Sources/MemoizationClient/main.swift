@@ -1,6 +1,7 @@
 import Memoization
 
 class A {
+    @memoized
     func fibonacci(_ n: Int) -> Int {
         if n <= 1 {
             return n
@@ -10,5 +11,6 @@ class A {
 }
 
 let a = A()
+print(a.memoizedFibonacci(10))
 
-print(a.fibonacci(10))
+print(a.memoizedFibonacci(10))
