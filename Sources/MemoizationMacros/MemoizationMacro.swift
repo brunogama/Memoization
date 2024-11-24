@@ -59,10 +59,17 @@ struct MemoizationPlugin: CompilerPlugin {
     ]
 }
 
-
-enum MacroError: Error {
+enum MacroError: Error, CustomStringConvertible {
     case misuse(String)
+    
+    var description: String {
+        switch self {
+        case .misuse(let message):
+            return message
+        }
+    }
 }
+
 
 extension String {
     var startsWithUppercase: Bool {
