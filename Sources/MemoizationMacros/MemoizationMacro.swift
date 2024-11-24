@@ -14,7 +14,10 @@ public enum MemoizeMacro: PeerMacro {
 
         var storageName: String { "memoized\(capitalizedFuncName)Storage" }
 
-        var parameterClause: String { parameters.map(\.declaration).joined(separator: ", ") }
+        var parameterClause: String {
+            parameters.map(\.declaration).joined(separator: ", ")
+                .replacingOccurrences(of: " ,", with: "")
+        }
 
         var keyParameters: String { parameters.map(\.name).joined(separator: ", ") }
     }
@@ -78,27 +81,26 @@ public enum MemoizeMacro: PeerMacro {
 
     private static func generateSource(from info: FunctionInfo) -> String {
         let parameterClause = info.parameterClause.trimmingCharacters(in: .whitespaces)
-        
         return """
-        
-        private var \(info.storageName): MemoizeStorage<\(info.returnType)>? = .init()
-        
-        func memoized\(info.funcName.uppercasingFirstLetter())(\(parameterClause)) -> \(info.returnType) {
-            let key = CacheKey(\(info.keyParameters))
-            
-            if let cachedResult = \(info.storageName)?.getValue(for: key) {
-                return cachedResult
+
+            private var \(info.storageName): MemoizeStorage<\(info.returnType)>? = .init()
+
+            func memoized\(info.funcName.uppercasingFirstLetter())(\(parameterClause)) -> \(info.returnType) {
+                let key = CacheKey(\(info.keyParameters))
+                
+                if let cachedResult = \(info.storageName)?.getValue(for: key) {
+                    return cachedResult
+                }
+                
+                let result = \(info.funcName)(\(info.keyParameters))
+                \(info.storageName)?[key] = CacheResult(result)
+                return result
             }
-            
-            let result = \(info.funcName)(\(info.keyParameters))
-            \(info.storageName)?[key] = CacheResult(result)
-            return result
-        }
-        
-        func resetCache\(info.funcName.uppercasingFirstLetter())() {
-            \(info.storageName)?.clear()
-        }
-        """
+
+            func resetCache\(info.funcName.uppercasingFirstLetter())() {
+                \(info.storageName)?.clear()
+            }
+            """
     }
 
     private static func parseDeclarations(from source: String) throws -> [DeclSyntax] {

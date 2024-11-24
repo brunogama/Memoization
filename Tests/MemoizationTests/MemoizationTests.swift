@@ -81,7 +81,7 @@ final class MemoizationTests: XCTestCase {
 
                 private var memoizedAddStorage: MemoizeStorage<Int>? = .init()
 
-                func memoizedAdd(_ a: Int, , _ b: Int) -> Int {
+                func memoizedAdd(_ a: Int, _ b: Int) -> Int {
                     let key = CacheKey(a, b)
                     
                     if let cachedResult = memoizedAddStorage?.getValue(for: key) {
@@ -89,6 +89,45 @@ final class MemoizationTests: XCTestCase {
                     }
                     
                     let result = add(a, b)
+                    memoizedAddStorage?[key] = CacheResult(result)
+                    return result
+                }
+
+                func resetCacheAdd() {
+                    memoizedAddStorage?.clear()
+                }
+            }
+            """
+        }
+    }
+
+    func test_memoized_on_three_parameter_function() {
+        assertMacro {
+            """
+            class MinistryOfSillyWalks {
+                @memoized
+                func add(spam: Int, ham: Int, eggs: Int) -> Int {
+                    return (0...1_000_000_000).compactMap { (spam + ham + eggs) * $0 } 
+                }
+            }
+            """
+        } expansion: {
+            """
+            class MinistryOfSillyWalks {
+                func add(spam: Int, ham: Int, eggs: Int) -> Int {
+                    return (0...1_000_000_000).compactMap { (spam + ham + eggs) * $0 } 
+                }
+
+                private var memoizedAddStorage: MemoizeStorage<Int>? = .init()
+
+                func memoizedAdd(spam: Int, ham: Int, eggs: Int) -> Int {
+                    let key = CacheKey(spam, ham, eggs)
+                    
+                    if let cachedResult = memoizedAddStorage?.getValue(for: key) {
+                        return cachedResult
+                    }
+                    
+                    let result = add(spam, ham, eggs)
                     memoizedAddStorage?[key] = CacheResult(result)
                     return result
                 }
