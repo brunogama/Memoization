@@ -10,21 +10,13 @@ public enum MemoizeMacro: PeerMacro {
         let funcName: String
         let parameters: [(type: String, name: String, declaration: String)]
 
-        var capitalizedFuncName: String {
-            funcName.uppercasingFirstLetter()
-        }
+        var capitalizedFuncName: String { funcName.uppercasingFirstLetter() }
 
-        var storageName: String {
-            "memoized\(capitalizedFuncName)Storage"
-        }
+        var storageName: String { "memoized\(capitalizedFuncName)Storage" }
 
-        var parameterClause: String {
-            parameters.map(\.declaration).joined(separator: ", ")
-        }
+        var parameterClause: String { parameters.map(\.declaration).joined(separator: ", ") }
 
-        var keyParameters: String {
-            parameters.map(\.name).joined(separator: ", ")
-        }
+        var keyParameters: String { parameters.map(\.name).joined(separator: ", ") }
     }
 
     public static func expansion(
@@ -37,7 +29,9 @@ public enum MemoizeMacro: PeerMacro {
         return try parseDeclarations(from: source)
     }
 
-    private static func extractFunctionInfo(from declaration: some DeclSyntaxProtocol) throws -> FunctionInfo {
+    private static func extractFunctionInfo(
+        from declaration: some DeclSyntaxProtocol
+    ) throws -> FunctionInfo {
         guard let funcDecl = declaration.as(FunctionDeclSyntax.self) else {
             throw MacroError.misuse("@memoized can only be attached to functions")
         }
@@ -53,7 +47,8 @@ public enum MemoizeMacro: PeerMacro {
         )
     }
 
-    private static func extractReturnType(from signature: FunctionSignatureSyntax) throws -> String {
+    private static func extractReturnType(from signature: FunctionSignatureSyntax) throws -> String
+    {
         guard let returnTypeSyntax = signature.returnClause?.type else {
             throw MacroError.misuse("@memoized requires a function with a return type")
         }
@@ -64,43 +59,44 @@ public enum MemoizeMacro: PeerMacro {
         from signature: FunctionSignatureSyntax
     ) throws -> [(type: String, name: String, declaration: String)] {
         let parameters = signature.parameterClause.parameters
-
         if parameters.isEmpty {
             throw MacroError.misuse("@memoized requires at least one parameter")
         }
-
         return parameters.map { param in
             let paramType = param.type.trimmed.description
             let paramName = extractParameterName(from: param)
-            let paramDeclaration = param.trimmed.description
+            // Use the original parameter syntax to maintain correct comma placement
+            let paramDeclaration = param.description
             return (paramType, paramName, paramDeclaration)
         }
     }
 
     private static func extractParameterName(from parameter: FunctionParameterSyntax) -> String {
-        if let secondName = parameter.secondName?.text {
-            return secondName
-        }
+        if let secondName = parameter.secondName?.text { return secondName }
         return parameter.firstName.text == "_" ? "_" : parameter.firstName.text
     }
 
     private static func generateSource(from info: FunctionInfo) -> String {
-        """
-
-        private var \(info.storageName) = MemoizeStorage<\(info.returnType)>()
-
-        public func memoized\(info.capitalizedFuncName)(\(info.parameterClause)) -> \(info.returnType) {
+        let parameterClause = info.parameterClause.trimmingCharacters(in: .whitespaces)
+        
+        return """
+        
+        private var \(info.storageName): MemoizeStorage<\(info.returnType)>? = .init()
+        
+        func memoized\(info.funcName.uppercasingFirstLetter())(\(parameterClause)) -> \(info.returnType) {
             let key = CacheKey(\(info.keyParameters))
-            if let cachedResult = \(info.storageName).getValue(for: key) {
+            
+            if let cachedResult = \(info.storageName)?.getValue(for: key) {
                 return cachedResult
             }
+            
             let result = \(info.funcName)(\(info.keyParameters))
-            \(info.storageName)[key] = CacheResult(result)
+            \(info.storageName)?[key] = CacheResult(result)
             return result
         }
-
-        public func resetMemoized\(info.capitalizedFuncName)() {
-            \(info.storageName).clear()
+        
+        func resetCache\(info.funcName.uppercasingFirstLetter())() {
+            \(info.storageName)?.clear()
         }
         """
     }
@@ -111,11 +107,8 @@ public enum MemoizeMacro: PeerMacro {
     }
 }
 
-@main
-struct MemoizationPlugin: CompilerPlugin {
-    let providingMacros: [Macro.Type] = [
-        MemoizeMacro.self
-    ]
+@main struct MemoizationPlugin: CompilerPlugin {
+    let providingMacros: [Macro.Type] = [MemoizeMacro.self]
 }
 
 enum MacroError: Error, CustomStringConvertible {
@@ -123,8 +116,7 @@ enum MacroError: Error, CustomStringConvertible {
 
     var description: String {
         switch self {
-        case .misuse(let message):
-            return message
+        case .misuse(let message): return message
         }
     }
 }
@@ -135,7 +127,5 @@ extension String {
         return firstCharacter.isUppercase
     }
 
-    func uppercasingFirstLetter() -> String {
-        prefix(1).uppercased() + dropFirst()
-    }
+    func uppercasingFirstLetter() -> String { prefix(1).uppercased() + dropFirst() }
 }
