@@ -9,6 +9,7 @@
 * Easy Integration: Seamlessly integrates with your Swift projects using Swift's macro system.
 * Reset Capability: Provides functions to reset the cache for specific `memoized` functions.
                                                                 
+this is not the most perfect implementation. Swift 6 will implement the feature preamble whitch mitch faciltate things a little bit. 
 ## Installation
                                                                 
 To integrate MemoizationMacros into your Swift project, follow these steps:
